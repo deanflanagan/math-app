@@ -14,5 +14,31 @@ Once a user is registered, authorized users can:
 - Until that time they can still PATCH their answer
 - Answers are 1-to-1 relationship with Questions and Users: each Answer has a Question id and a User id
 - Users are in 1-to-many relationship with Answers
+- Answer model has a `save()` method to check if submitted Answer was correct (1-to-1 with Question)
+- Can populate the Questions with:
+```
+#!/bin/bash
+
+# Create 5 simple math questions with their associated answers
+questions=(
+  "What is 2 + 2?" 4
+  "What is 5 * 3?" 15
+  "What is 10 - 4?" 6
+  "What is 7 / 1?" 7
+  "What is 9 * 9?" 81
+)
+
+for ((i=0; i<${#questions[@]}; i+=2)); do
+  question=${questions[i]}
+  answer=${questions[i+1]}
+  echo "Creating question: $question"
+  python manage.py shell <<EOF
+from api.models import Question
+q = Question(text="$question", correct_answer=$answer)
+q.save()
+EOF
+done
+```
+- Will need to add Questions & Answers to DRF, URLs, etc
 
 That is mostly backend/Django work. For frontend, you need some simple styling for homePage, then landing page for logged in Users, Questions page, submitted Answers page. 
