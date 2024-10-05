@@ -49,3 +49,10 @@ class Answer(models.Model):
 
     def __str__(self) -> str:
         return f'Answer {self.id} by {self.user.username} for Question {self.question.id}'
+    
+    def save(self, *args, **kwargs):
+        if self.question.correct_answer == self.answer:
+            self.is_correct = True
+        else:
+            self.is_correct = False
+        super().save(*args, **kwargs)
