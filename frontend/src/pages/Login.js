@@ -7,25 +7,27 @@ import { useEffect } from 'react';
 
 const URL = process.env.REACT_APP_BACKEND_URL + '/api/login';
 
-const Login = (props) => {
-  let navigate = useNavigate();
-  const { isLoggedIn, setIsLoggedIn, setName, setEmail } = props;
+const Login = () => {
+  const navigate = useNavigate();
+  const name = localStorage.getItem('username');
+  const email = localStorage.getItem('email');
+  const isLoggedIn = name && email;
 
   useEffect(() => {
-    if (isLoggedIn) navigate('profile');
-  });
+    if (isLoggedIn) navigate('/profile');
+  }, [isLoggedIn, navigate]);
 
   const handleLogin = async (ev) => {
     ev.preventDefault();
     const email = ev.target.email.value;
     const password = ev.target.password.value;
-    const formData = { email: email, password: password };
+    const formData = { email, password };
     const res = await axios.post(URL, formData);
     const data = res.data;
     if (data.success === true) {
       toast.success(data.message);
-      setIsLoggedIn(true);
-      setEmail(email);
+      localStorage.setItem('username', data.username);
+      localStorage.setItem('email', email);
       navigate('/profile');
     } else toast.error(data.message);
   };

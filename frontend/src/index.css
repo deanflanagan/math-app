@@ -6,3 +6,7 @@
   content: " *";
   color: red;
 }
+
+.container{
+  margin: auto;
+}

@@ -7,13 +7,16 @@ import CountryInput from '../components/CountryInput';
 import { useEffect } from 'react';
 
 const URL = process.env.REACT_APP_BACKEND_URL + '/api/register';
-const Register = (props) => {
-  const { isLoggedIn, setIsLoggedIn, setName, setEmail } = props;
+
+const Register = () => {
+  const name = localStorage.getItem('username');
+  const email = localStorage.getItem('email');
+  const isLoggedIn = name && email;
   let navigate = useNavigate();
 
   useEffect(() => {
-    if (isLoggedIn) navigate('profile');
-  });
+    if (isLoggedIn) navigate('/profile');
+  }, [isLoggedIn, navigate]);
 
   const handleRegister = async (ev) => {
     ev.preventDefault();
@@ -38,15 +41,14 @@ const Register = (props) => {
         const data = res.data;
         if (data.success === true) {
           toast.success(data.message);
-          setIsLoggedIn(true);
-          setName(name);
-          setEmail(email);
+          localStorage.setItem('username', name);
+          localStorage.setItem('email', email);
           navigate('/profile');
         } else {
           toast.error(data.message);
         }
       } catch (err) {
-        console.log('Some error occured', err);
+        toast.error(err);
       }
     }
   };
