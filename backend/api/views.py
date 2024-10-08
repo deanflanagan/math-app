@@ -4,8 +4,8 @@ from django.core.mail import send_mail
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import User, Token
-from .serializers import UserSerializer, TokenSerializer
+from .models import User, Token, Answer
+from .serializers import UserSerializer, TokenSerializer, AnswerSerializer
 from django.conf import settings
 from datetime import datetime, timedelta
 import hashlib
@@ -178,7 +178,7 @@ class LoginView(APIView):
             )
         else:
             return Response(
-                {"success": True, "message": "You are now logged in!"},
+                {"success": True, "message": "You are now logged in!", "username":user.username},
                 status=status.HTTP_200_OK,
             )
 from django.shortcuts import render, get_object_or_404
@@ -207,3 +207,50 @@ class QuestionDetailView(View):
     def get(self, request, pk):
         question = get_object_or_404(Question, pk=pk)
         return JsonResponse({'id': question.id, 'text': question.text, 'correct_answer': question.correct_answer})
+
+class AnswerView(View):
+    def get(self, request):
+        username=request.data["username"]
+        user=get_object_or_404(User, username=username)
+        user_id=user.id
+        question_id=request.data["question_id"]
+        answer=get_object_or_404(Answer, user_id=user_id, question_id=question_id)
+        return Response(
+                answer,
+                status=status.HTTP_200_OK,
+            )
+
+    @method_decorator(csrf_exempt)
+    def post(self, request):
+        username=request.data["username"]
+        user=get_object_or_404(User, username=username)
+        user_id=user.id
+        question_id=request.data["question_id"]
+        user_answer=request.data["answer"]
+        question=get_object_or_404(Question, pk=question_id)
+        is_correct=user_answer==question.correct_answer
+        data={
+            "user":user_id,
+            "question":question_id,
+            "answer":user_answer,
+            "is_correct":is_correct
+        }
+        serializer = AnswerSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            created_answer=serializer.instance
+            return Response(
+                created_answer,
+                status=status.HTTP_200_OK,
+            )
+        else:
+            error_msg = ""
+            for key in serializer.errors:
+                error_msg += serializer.errors[key][0]
+            return Response(
+                {
+                    "success": False,
+                    "message": error_msg,
+                },
+                status=status.HTTP_200_OK,
+            )
