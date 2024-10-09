@@ -2,6 +2,7 @@
 
 import { Avatar, Dropdown, Navbar } from 'flowbite-react';
 import UserIcon from '../images/user.png';
+import Logo from '../images/logo.png';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 
@@ -19,13 +20,9 @@ const AppNavBar = () => {
   };
 
   return (
-    <Navbar fluid>
+    <Navbar className="fixed w-full" fluid>
       <Navbar.Brand href="https://github.com/deanflanagan">
-        <img
-          src="https://media.geeksforgeeks.org/wp-content/uploads/20210224040124/JSBinCollaborativeJavaScriptDebugging6-300x160.png"
-          className="mr-3 h-6 sm:h-9"
-          alt="Flowbite React Logo"
-        />
+        <img src={Logo} className="mr-3 h-6 sm:h-9" alt="Flowbite React Logo" />
         <span className="self-center whitespace-nowrap text-3xl font-semibold dark:text-white">
           Math Quiz
         </span>
@@ -43,8 +40,8 @@ const AppNavBar = () => {
                 {email}
               </span>
             </Dropdown.Header>
-            <Dropdown.Item>Settings</Dropdown.Item>
-            <Dropdown.Item>Your Orders</Dropdown.Item>
+            <Dropdown.Item href="/profile">Profile</Dropdown.Item>
+            <Dropdown.Item>Result</Dropdown.Item>
             <Dropdown.Divider />
             <Dropdown.Item onClick={handleLogout}>Log out</Dropdown.Item>
           </Dropdown>
@@ -52,21 +49,16 @@ const AppNavBar = () => {
         </div>
       )}
       <Navbar.Collapse>
-        <Navbar.Link href="/" className="text-lg">
-          Home
-        </Navbar.Link>
-        <Navbar.Link href="#" className="text-lg">
-          About
-        </Navbar.Link>
-        <Navbar.Link href="#" className="text-lg">
-          Services
-        </Navbar.Link>
-        <Navbar.Link href="#" className="text-lg">
-          Pricing
-        </Navbar.Link>
-        <Navbar.Link href="#" className="text-lg">
-          Contact
-        </Navbar.Link>
+        {isLoggedIn && (
+          <>
+            <Navbar.Link href="/" className="text-lg">
+              Home
+            </Navbar.Link>
+            <Navbar.Link href="#" className="text-lg">
+              Result
+            </Navbar.Link>
+          </>
+        )}
         {!isLoggedIn && (
           <Navbar.Link href="/login" className="text-lg">
             Login

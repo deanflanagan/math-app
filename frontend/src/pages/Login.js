@@ -14,7 +14,7 @@ const Login = () => {
   const isLoggedIn = name && email;
 
   useEffect(() => {
-    if (isLoggedIn) navigate('/profile');
+    if (isLoggedIn) navigate('/');
   }, [isLoggedIn, navigate]);
 
   const handleLogin = async (ev) => {
@@ -28,7 +28,7 @@ const Login = () => {
       toast.success(data.message);
       localStorage.setItem('username', data.username);
       localStorage.setItem('email', email);
-      navigate('/profile');
+      navigate('/');
     } else toast.error(data.message);
   };
 
