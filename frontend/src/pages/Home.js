@@ -1,38 +1,84 @@
-// pages/Home.js
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import QuizItemAvatar from '../images/quiz item.png';
+import { toast } from 'react-toastify';
 
 const URL = process.env.REACT_APP_BACKEND_URL + '/api/questions';
+const ANSWER_API_URL = process.env.REACT_APP_BACKEND_URL + '/api/answer';
+const SUBMISSION_STATUS_URL =
+  process.env.REACT_APP_BACKEND_URL + '/api/submission-status';
 
 const Home = () => {
   const name = localStorage.getItem('username');
   const email = localStorage.getItem('email');
   const isLoggedIn = name && email;
 
-  const [quizData, setQuizData] = useState();
-  const [currentIdx, setCurrentIdx] = useState(1);
+  const [quizData, setQuizData] = useState([]);
   const [answer, setAnswer] = useState([]);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
   useEffect(() => {
     const fetchItems = async () => {
-      const res = await axios.get(URL);
-      const data = res.data;
-      setQuizData(data);
-      const blankAnswer = Array(data.length).fill('');
-      setAnswer(blankAnswer);
+      try {
+        /*const submissionRes = await axios.get(SUBMISSION_STATUS_URL, {
+          params: { username: name }
+        });
+        if (submissionRes.data.has_submitted) {
+          setHasSubmitted(true);
+        }*/
+
+        const res = await axios.get(URL);
+        const data = res.data;
+        setQuizData(data);
+
+        const blankAnswer = Array(data.length).fill('');
+        for (const [idx, item] of data.entries()) {
+          const apiData = { username: name, question_id: item.id };
+          try {
+            const response = await axios.get(ANSWER_API_URL, {
+              params: apiData
+            });
+            blankAnswer[idx] = response.data.answer;
+          } catch {
+            blankAnswer[idx] = '';
+          }
+        }
+        setAnswer(blankAnswer);
+      } catch (error) {
+        toast.error(`Error fetching quiz data or submission status: ${error}`);
+      }
     };
+
     if (isLoggedIn) {
       fetchItems();
     }
   }, [isLoggedIn, name, email]);
 
-  const onAnswer = () => {};
-
-  const onAnswerChange = (event) => {
+  const onAnswerChange = (event, idx) => {
     const copyAnswer = [...answer];
-    copyAnswer[currentIdx] = event.target.value;
+    copyAnswer[idx] = event.target.value;
     setAnswer(copyAnswer);
+  };
+
+  const handleSubmit = async () => {
+    try {
+      for (let i = 0; i < answer.length; i++) {
+        if (!answer[i]) {
+          toast.error('You have to answer all the questions.');
+          return;
+        }
+      }
+      for (let i = 0; i < quizData.length; i++) {
+        const apiData = {
+          username: name,
+          question_id: quizData[i].id,
+          answer: answer[i]
+        };
+        await axios.post(ANSWER_API_URL, apiData);
+      }
+      setHasSubmitted(true);
+    } catch (error) {
+      toast.error(`Error submitting answers: ${error}`);
+    }
   };
 
   return (
@@ -57,58 +103,32 @@ const Home = () => {
         </>
       )}
       {isLoggedIn && (
-        <div className="flex flex-col gap-12 w-full px-4 h-full pt-16">
-          <h1 className="w-full text-center text-4xl lg:text-6xl">
-            Welcome to Math Quiz, {name}.
-          </h1>
-          <div className="w-full flex flex-col sm:flex-row h-[calc(100%-100px)] gap-8">
-            <div className="w-full sm:w-1/3 sm:max-w-[300px] gap-2 md:gap-4 flex flex-row sm:flex-col sm:h-full overflow-auto">
-              {quizData &&
-                quizData.map((item, idx) => (
-                  <button
-                    key={`prob-${item?.id}`}
-                    onClick={() => {
-                      setCurrentIdx(idx);
-                    }}
-                    className={`w-full px-3.5 py-3 gap-4 flex flex-row rounded-full shadow-md bg-white border hover:border-purple-500 justify-center items-center ${
-                      idx === currentIdx ? 'border-2 border-purple-500' : ''
-                    }`}
-                  >
-                    <div className="size-18 rounded-full">
-                      <img
-                        src={QuizItemAvatar}
-                        alt="Quiz Item"
-                        width={72}
-                        height={72}
-                      />
-                    </div>
-                    <div className="w-full text-md md:text-xl truncate">
-                      {item?.text}
-                    </div>
-                  </button>
-                ))}
-            </div>
-            {!!quizData && (
-              <div className="w-full relative flex flex-col h-full justify-center items-center gap-8 bg-white rounded-3xl p-4">
-                <div className="text-3xl sm:text-5xl text-center">
-                  {quizData[currentIdx]?.text}
-                </div>
-                <div className="flex flex-col sm:flex-row w-full gap-4 justify-center items-center">
+        <div className="w-full max-w-lg p-6 bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700 max-h-[calc(100%-100px)] overflow-auto">
+          <div className="text-xl">Math Quiz</div>
+          <div className="flex flex-col gap-4">
+            {!!quizData &&
+              quizData.map((item, idx) => (
+                <div
+                  className="flex flex-col sm:flex-row justify-between items-center gap-2"
+                  key={item.id}
+                >
+                  <div className="w-full">{item.text}</div>
                   <input
-                    className="bg-gray-50 rounded-full border max-sm:w-full max-sm:max-w-[200px] border-gray-300 text-gray-900 text-sm focus:ring-purple-500 focus:border-purple-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-purple-500 dark:focus:border-purple-500 max-w-[200px]"
-                    onChange={onAnswerChange}
-                    value={answer[currentIdx]}
+                    value={answer[idx]}
+                    onChange={(e) => onAnswerChange(e, idx)}
+                    disabled={hasSubmitted}
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-purple-500 dark:focus:border-purple-500"
                   />
-                  <button
-                    className="rounded-full py-2.5 px-4 max-sm:w-full max-sm:max-w-[200px] text-white bg-blue-700"
-                    onClick={onAnswer}
-                  >
-                    Answer
-                  </button>
                 </div>
-              </div>
-            )}
+              ))}
           </div>
+          <button
+            disabled={hasSubmitted}
+            onClick={handleSubmit}
+            className="mt-4 focus:outline-none text-white bg-purple-600 hover:bg-purple-700 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-purple-500 dark:hover:bg-purple-600 dark:focus:ring-purple-800 disabled:bg-slate-600"
+          >
+            Submit Answers
+          </button>
         </div>
       )}
     </div>

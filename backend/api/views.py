@@ -210,47 +210,94 @@ class QuestionDetailView(View):
 
 class AnswerView(View):
     def get(self, request):
-        username=request.data["username"]
+        username = request.GET.get("username")
+        question_id = request.GET.get("question_id")
         user=get_object_or_404(User, username=username)
         user_id=user.id
-        question_id=request.data["question_id"]
-        answer=get_object_or_404(Answer, user_id=user_id, question_id=question_id)
-        return Response(
-                answer,
-                status=status.HTTP_200_OK,
+        answer=get_object_or_404(Answer, user=user_id, question=question_id)
+        return JsonResponse({"answer":answer.answer})
+
+    def patch(self, request):
+        request_data=json.loads(request.body)
+        username = request_data.get("username")
+        user = get_object_or_404(User, username=username)
+
+        question_id = request_data.get("question_id")
+        user_answer = request_data.get("answer")
+        question = get_object_or_404(Question, pk=question_id)
+        is_correct = user_answer == question.correct_answer
+
+        answer_obj= Answer.objects.filter(user=user.id, question=question_id).first()
+        if answer_obj:
+            answer_obj.answer=user_answer
+            answer_obj.is_correct=is_correct
+            answer_obj.save()
+            return JsonResponse(
+                {"message": "Successfully updated answer!"},
+                status=201,
             )
 
-    @method_decorator(csrf_exempt)
-    def post(self, request):
-        username=request.data["username"]
-        user=get_object_or_404(User, username=username)
-        user_id=user.id
-        question_id=request.data["question_id"]
-        user_answer=request.data["answer"]
-        question=get_object_or_404(Question, pk=question_id)
-        is_correct=user_answer==question.correct_answer
-        data={
-            "user":user_id,
-            "question":question_id,
-            "answer":user_answer,
-            "is_correct":is_correct
+        data = {
+            "user": user.id,
+            "question": question_id,
+            "answer": user_answer,
+            "is_correct": is_correct
         }
         serializer = AnswerSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
-            created_answer=serializer.instance
-            return Response(
-                created_answer,
-                status=status.HTTP_200_OK,
+            return JsonResponse(
+                {"message": "Successfully updated answer!"},
+                status=201,
             )
         else:
-            error_msg = ""
-            for key in serializer.errors:
-                error_msg += serializer.errors[key][0]
-            return Response(
-                {
-                    "success": False,
-                    "message": error_msg,
-                },
-                status=status.HTTP_200_OK,
+            error_msg = "".join([serializer.errors[key][0] for key in serializer.errors])
+            return JsonResponse({
+                "success": False,
+                "message": error_msg,
+            }, status=400)
+
+    def post(self, request):
+        request_data=json.loads(request.body)
+        username = request_data.get("username")
+        user = get_object_or_404(User, username=username)
+
+        if user.has_submitted:
+            return JsonResponse({
+                "message": "You have already submitted your answers!"
+            }, status=403)
+
+        question_id = request_data.get("question_id")
+        user_answer = request_data.get("answer")
+        question = get_object_or_404(Question, pk=question_id)
+        is_correct = user_answer == question.correct_answer
+
+        answer_obj= Answer.objects.filter(user=user.id, question=question_id).first()
+        if answer_obj:
+            answer_obj.answer=user_answer
+            answer_obj.is_correct=is_correct
+            answer_obj.save()
+            return JsonResponse(
+                {"message": "Successfully updated answer!"},
+                status=201,
             )
+
+        data = {
+            "user": user.id,
+            "question": question_id,
+            "answer": user_answer,
+            "is_correct": is_correct
+        }
+        serializer = AnswerSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(
+                {"message": "Successfully updated answer!"},
+                status=201,
+            )
+        else:
+            error_msg = "".join([serializer.errors[key][0] for key in serializer.errors])
+            return JsonResponse({
+                "success": False,
+                "message": error_msg,
+            }, status=400)
