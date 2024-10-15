@@ -5,12 +5,14 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import User, Token, Answer
-from .serializers import UserSerializer, TokenSerializer, AnswerSerializer
+from .serializers import UserSerializer, TokenSerializer, AnswerSerializer, CountrySerializer
 from django.conf import settings
+from rest_framework import viewsets, permissions
 from datetime import datetime, timedelta
 import hashlib
 import uuid
 from django.utils import timezone
+from .permissions import CanViewReportPermission
 
 SALT = "8b4f6b2cc1868d75ef79e5cfb8779c11b6a374bf0fce05b485581bf4e1e25b"
 URL = "http://localhost:3000"
@@ -208,14 +210,27 @@ class QuestionDetailView(View):
         question = get_object_or_404(Question, pk=pk)
         return JsonResponse({'id': question.id, 'text': question.text, 'correct_answer': question.correct_answer})
 
+class CountryView(APIView):
+    permission_classes = [permissions.IsAuthenticated, CanViewReportPermission]
+    def get(self, request):
+        print('hello')
+        answers = Answer.objects.all()
+        serializer = CountrySerializer(answers, many=True)
+        return JsonResponse(serializer.data)
+
 class AnswerView(View):
     def get(self, request):
         username = request.GET.get("username")
-        question_id = request.GET.get("question_id")
         user=get_object_or_404(User, username=username)
         user_id=user.id
-        answer=get_object_or_404(Answer, user=user_id, question=question_id)
-        return JsonResponse({"answer":answer.answer})
+        if request.GET.get("question_id"):
+            question_id=request.GET.get("question_id")
+            answer=get_object_or_404(Answer, user=user_id, question=question_id)
+            return JsonResponse({"answer":answer.answer})
+        else:
+            answers=Answer.objects.filter(user=user_id)
+            answers_list=[{"question_id":answer.question.id, "answer":answer.answer, "is_correct":answer.is_correct} for answer in answers]
+            return JsonResponse({"answers":answers_list})
 
     def patch(self, request):
         request_data=json.loads(request.body)
@@ -301,3 +316,19 @@ class AnswerView(View):
                 "success": False,
                 "message": error_msg,
             }, status=400)
+
+from rest_framework.renderers import JSONRenderer
+
+class UserView(View):
+    def get(self, request, username):
+        user = get_object_or_404(User, username=username)
+        serializer = UserSerializer(user)
+        return JsonResponse(serializer.data)
+    @method_decorator(csrf_exempt)
+    def patch(self, request, username):
+        user = get_object_or_404(User, username=username)
+        serializer = UserSerializer(user,data=json.loads(request.body),partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

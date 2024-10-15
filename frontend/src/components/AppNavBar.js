@@ -21,7 +21,7 @@ const AppNavBar = () => {
 
   return (
     <Navbar className="fixed w-full z-[999]" fluid>
-      <Navbar.Brand href="https://github.com/deanflanagan">
+      <Navbar.Brand href="/">
         <img src={Logo} className="mr-3 h-6 sm:h-9" alt="Flowbite React Logo" />
         <span className="self-center whitespace-nowrap text-3xl font-semibold dark:text-white">
           Math Quiz
@@ -41,7 +41,7 @@ const AppNavBar = () => {
               </span>
             </Dropdown.Header>
             <Dropdown.Item href="/profile">Profile</Dropdown.Item>
-            <Dropdown.Item>Result</Dropdown.Item>
+            <Dropdown.Item href="/result">Result</Dropdown.Item>
             <Dropdown.Divider />
             <Dropdown.Item onClick={handleLogout}>Log out</Dropdown.Item>
           </Dropdown>
@@ -54,7 +54,7 @@ const AppNavBar = () => {
             <Navbar.Link href="/" className="text-lg">
               Home
             </Navbar.Link>
-            <Navbar.Link href="#" className="text-lg">
+            <Navbar.Link href="/answer" className="text-lg">
               Result
             </Navbar.Link>
           </>

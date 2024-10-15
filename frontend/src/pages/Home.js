@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { Link } from 'react-router-dom';
 
 const URL = process.env.REACT_APP_BACKEND_URL + '/api/questions';
 const ANSWER_API_URL = process.env.REACT_APP_BACKEND_URL + '/api/answer';
+
+const USER_API_URL = process.env.REACT_APP_BACKEND_URL + '/api/users';
 const SUBMISSION_STATUS_URL =
   process.env.REACT_APP_BACKEND_URL + '/api/submission-status';
 
@@ -17,36 +20,46 @@ const Home = () => {
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
   useEffect(() => {
+    
     const fetchItems = async () => {
       try {
-        /*const submissionRes = await axios.get(SUBMISSION_STATUS_URL, {
-          params: { username: name }
-        });
-        if (submissionRes.data.has_submitted) {
-          setHasSubmitted(true);
-        }*/
+        const username = localStorage.getItem('username');
+        axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/users/${username}/`)
+          .then(response => {
+            if (response.data.has_submitted) {
+              setHasSubmitted(true);
+            } else {
+              setHasSubmitted(false);
+            }
+          })
+          .catch(error => {
+            console.error(error);
+          });
 
-        const res = await axios.get(URL);
-        const data = res.data;
-        setQuizData(data);
+        if (!hasSubmitted) {
+          const res = await axios.get(URL);
+          const data = res.data;
+          setQuizData(data);
 
-        const blankAnswer = Array(data.length).fill('');
-        for (const [idx, item] of data.entries()) {
-          const apiData = { username: name, question_id: item.id };
-          try {
-            const response = await axios.get(ANSWER_API_URL, {
-              params: apiData
-            });
-            blankAnswer[idx] = response.data.answer;
-          } catch {
-            blankAnswer[idx] = '';
+          const blankAnswer = Array(data.length).fill('');
+          for (const [idx, item] of data.entries()) {
+            const apiData = { username: name, question_id: item.id };
+            try {
+              const response = await axios.get(ANSWER_API_URL, {
+                params: apiData
+              });
+              blankAnswer[idx] = response.data.answer;
+            } catch {
+              blankAnswer[idx] = '';
+            }
           }
+          setAnswer(blankAnswer);
         }
-        setAnswer(blankAnswer);
       } catch (error) {
         toast.error(`Error fetching quiz data or submission status: ${error}`);
       }
     };
+
 
     if (isLoggedIn) {
       fetchItems();
@@ -76,11 +89,23 @@ const Home = () => {
         await axios.post(ANSWER_API_URL, apiData);
       }
       setHasSubmitted(true);
+      const response = await axios.patch(`${USER_API_URL}/${name}/`, {
+        has_submitted: true,
+      });
     } catch (error) {
       toast.error(`Error submitting answers: ${error}`);
     }
   };
-
+  if (hasSubmitted) {
+    return (
+      <div className="max-w-md bg-white p-4 rounded shadow-md mx-auto mt-20">
+        <h2 className="text-3xl text-center mb-4">You already submitted!</h2>
+        <p className="text-lg text-center">
+          Go to <Link to="/answer" className="text-blue-600 hover:text-blue-800">Results</Link> to see your score!
+        </p>
+      </div>
+    );
+  } else {
   return (
     <div className="w-full justify-center items-center flex flex-col gap-12 h-screen p-8">
       {!isLoggedIn && (
@@ -132,7 +157,7 @@ const Home = () => {
         </div>
       )}
     </div>
-  );
+  );}
 };
 
 export default Home;
