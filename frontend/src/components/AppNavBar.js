@@ -13,7 +13,6 @@ const AppNavBar = () => {
   const email = localStorage.getItem('email');
   const is_staff = localStorage.getItem('is_staff') === 'true';
   const isLoggedIn = name && email;
-  console.log(is_staff);
   const handleLogout = () => {
     localStorage.removeItem('username');
     localStorage.removeItem('email');

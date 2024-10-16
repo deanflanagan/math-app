@@ -13,7 +13,6 @@ const Report = () => {
       setReportData(data);
     };
     if (!is_staff) {
-      console.log('here');
       return;
     }
     fetch();
@@ -23,23 +22,19 @@ const Report = () => {
   }
 
   return (
-    <div className="container">
-      <div className="flex flex-col w-full">
-        <div className="flex flex-row gap-4">
-          <div className="w-full">User ID</div>
-          <div className="w-full">Question ID</div>
-          <div className="w-full">Country</div>
-          <div className="w-full">Answer</div>
+    <div className="container mx-auto p-4 mt-40">
+      <h1 className="text-3xl text-center mb-4">Report</h1>
+      <div className="max-w-md bg-white p-4 rounded shadow-md mx-auto">
+        <div className="flex flex-row justify-between mb-2 font-bold">
+          <span className="text-lg">Country</span>
+          <span className="text-lg">Percent</span>
         </div>
-        {reportData &&
-          reportData.map((item) => (
-            <div className="flex flex-row gap-4">
-              <div className="w-full">{item?.user_id}</div>
-              <div className="w-full">{item?.question_id}</div>
-              <div className="w-full">{item?.country}</div>
-              <div className="w-full">{item?.answer}</div>
-            </div>
-          ))}
+        {Object.keys(reportData).map((country, index) => (
+          <div key={index} className="flex flex-row justify-between mb-2">
+            <span className="text-lg">{country}</span>
+            <span className="text-lg">{(reportData[country] * 100).toFixed(2)}%</span>
+          </div>
+        ))}
       </div>
     </div>
   );

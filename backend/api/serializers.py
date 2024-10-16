@@ -1,11 +1,11 @@
 from rest_framework import serializers
 from .models import User, Token, Answer
 
-class CountrySerializer(serializers.ModelSerializer):
+class ReportSerializer(serializers.ModelSerializer):
     country = serializers.CharField(source="user.country")
     class Meta:
         model = Answer
-        fields = ["answer", "question_id", "user_id", "country"]
+        fields = ["is_correct", "country"]
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:

@@ -5,12 +5,13 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import User, Token, Answer
-from .serializers import UserSerializer, TokenSerializer, AnswerSerializer, CountrySerializer
+from .serializers import UserSerializer, TokenSerializer, AnswerSerializer, ReportSerializer
 from django.conf import settings
 from rest_framework import viewsets, permissions
 from datetime import datetime, timedelta
 import hashlib
 import uuid
+from collections import defaultdict
 from django.utils import timezone
 from .permissions import CanViewReportPermission
 
@@ -210,12 +211,18 @@ class QuestionDetailView(View):
         question = get_object_or_404(Question, pk=pk)
         return JsonResponse({'id': question.id, 'text': question.text, 'correct_answer': question.correct_answer})
 
-class CountryView(APIView):
+class ReportView(APIView):
     #permission_classes = [permissions.IsAuthenticated, CanViewReportPermission]
     def get(self, request):
         answers = Answer.objects.all()
-        serializer = CountrySerializer(answers, many=True)
-        return JsonResponse(serializer.data, safe=False)
+        serializer = ReportSerializer(answers, many=True)
+        final = defaultdict(list)
+        for answer in serializer.data:
+            final[answer["country"]].append(1 if answer["is_correct"] else 0)
+        for key, value in final.items():
+            final[key] = sum(value) / len(value)
+        # serializer.data = final
+        return JsonResponse(final, safe=False)
 
 class AnswerView(View):
     def get(self, request):
