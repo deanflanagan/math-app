@@ -12,6 +12,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import ResetPassword from './pages/ResetPassword';
 import Profile from './pages/Profile';
 import Result from './pages/Result';
+import Report from './pages/Report';
 
 const App = () => (
   <div className="md:h-screen bg-purple-100">
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="resetPassword" element={<ResetPassword />} />
           <Route path="profile" exact element={<Profile />} />
           <Route path="answer" exact element={<Result />} />
+          <Route path="report" exact element={<Report />} />
         </Routes>
       </div>
     </BrowserRouter>

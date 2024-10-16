@@ -28,6 +28,7 @@ const Login = () => {
       toast.success(data.message);
       localStorage.setItem('username', data.username);
       localStorage.setItem('email', email);
+      localStorage.setItem('is_staff', data.is_staff);
       navigate('/');
     } else toast.error(data.message);
   };

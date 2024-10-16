@@ -11,10 +11,13 @@ const AppNavBar = () => {
 
   const name = localStorage.getItem('username');
   const email = localStorage.getItem('email');
+  const is_staff = localStorage.getItem('is_staff') === 'true';
   const isLoggedIn = name && email;
+  console.log(is_staff);
   const handleLogout = () => {
     localStorage.removeItem('username');
     localStorage.removeItem('email');
+    localStorage.removeItem('is_staff');
     navigate('/');
     toast.success('You are successfully logged out!');
   };
@@ -57,6 +60,11 @@ const AppNavBar = () => {
             <Navbar.Link href="/answer" className="text-lg">
               Result
             </Navbar.Link>
+            {is_staff && (
+              <Navbar.Link href="/report" className="text-lg">
+                Report
+              </Navbar.Link>
+            )}
           </>
         )}
         {!isLoggedIn && (

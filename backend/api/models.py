@@ -31,6 +31,12 @@ class User(AbstractUser):
     def __str__(self) -> str:
         return self.username
 
+    class Meta:
+        permissions = [
+            ('can_view_report', 'Can view report'),
+        ]
+
+
 class Question(models.Model):
     id = models.AutoField(primary_key=True)
     text = models.TextField()

@@ -180,7 +180,7 @@ class LoginView(APIView):
             )
         else:
             return Response(
-                {"success": True, "message": "You are now logged in!", "username":user.username},
+                {"success": True, "message": "You are now logged in!", "username":user.username, "is_staff":user.is_staff},
                 status=status.HTTP_200_OK,
             )
 from django.shortcuts import render, get_object_or_404
@@ -211,12 +211,11 @@ class QuestionDetailView(View):
         return JsonResponse({'id': question.id, 'text': question.text, 'correct_answer': question.correct_answer})
 
 class CountryView(APIView):
-    permission_classes = [permissions.IsAuthenticated, CanViewReportPermission]
+    #permission_classes = [permissions.IsAuthenticated, CanViewReportPermission]
     def get(self, request):
-        print('hello')
         answers = Answer.objects.all()
         serializer = CountrySerializer(answers, many=True)
-        return JsonResponse(serializer.data)
+        return JsonResponse(serializer.data, safe=False)
 
 class AnswerView(View):
     def get(self, request):
