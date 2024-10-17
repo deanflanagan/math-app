@@ -14,6 +14,8 @@ import uuid
 from collections import defaultdict
 from django.utils import timezone
 from .permissions import CanViewReportPermission
+from django.utils.decorators import method_decorator
+from django.middleware.csrf import get_token
 
 SALT = "8b4f6b2cc1868d75ef79e5cfb8779c11b6a374bf0fce05b485581bf4e1e25b"
 URL = "http://localhost:3000"
@@ -38,6 +40,8 @@ def mail_template(content, button_url, button_text):
             </body>
             </html>"""
 
+def csrf_token_view(request):
+    return JsonResponse({'csrfToken': get_token(request)})
 
 # Create your views here.
 class ResetPasswordView(APIView):
@@ -186,8 +190,6 @@ class LoginView(APIView):
             )
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
 from django.views import View
 from .models import Question
 import json
@@ -197,7 +199,6 @@ class QuestionListView(View):
         questions = Question.objects.all().values('id', 'text', 'correct_answer')
         return JsonResponse(list(questions), safe=False)
 
-    @method_decorator(csrf_exempt)
     def post(self, request):
         data = json.loads(request.body)
         question = Question.objects.create(
@@ -330,7 +331,6 @@ class UserView(View):
         user = get_object_or_404(User, username=username)
         serializer = UserSerializer(user)
         return JsonResponse(serializer.data)
-    @method_decorator(csrf_exempt)
     def patch(self, request, username):
         user = get_object_or_404(User, username=username)
         serializer = UserSerializer(user,data=json.loads(request.body),partial=True)

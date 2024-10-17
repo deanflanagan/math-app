@@ -1,9 +1,10 @@
 from django.urls import path, include
-from .views import RegistrationView, LoginView, ReportView, ForgotPasswordView, ResetPasswordView, QuestionListView, QuestionDetailView, AnswerView, UserView
+from .views import RegistrationView, LoginView, ReportView, ForgotPasswordView, ResetPasswordView, QuestionListView, QuestionDetailView, AnswerView, UserView, csrf_token_view
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import routers
 
 urlpatterns = [
+    path("get_csrf_token", csrf_token_view),
     path("register", RegistrationView.as_view(), name="register"),
     path("login", LoginView.as_view(), name="login"),
     path("forgotPassword", ForgotPasswordView.as_view(), name="forgotPassword"),
