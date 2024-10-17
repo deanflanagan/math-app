@@ -11,7 +11,7 @@ urlpatterns = [
     path("resetPassword", ResetPasswordView.as_view(), name="resetPassword"),
     path('questions/<int:pk>/', QuestionDetailView.as_view(), name='question-detail'),
     path('questions/', QuestionListView.as_view(), name='question-list'),
-    path('answer', csrf_exempt(AnswerView.as_view()), name='answer'),
-    path('users/<str:username>/', csrf_exempt(UserView.as_view()), name='user_detail'),
+    path('answer', AnswerView.as_view(), name='answer'),
+    path('users/<str:username>/', UserView.as_view(), name='user_detail'),
     path('report', ReportView.as_view(), name='report'),
 ]

@@ -8,8 +8,6 @@ const URL = process.env.REACT_APP_BACKEND_URL + '/api/questions';
 const ANSWER_API_URL = process.env.REACT_APP_BACKEND_URL + '/api/answer';
 
 const USER_API_URL = process.env.REACT_APP_BACKEND_URL + '/api/users';
-const SUBMISSION_STATUS_URL =
-  process.env.REACT_APP_BACKEND_URL + '/api/submission-status';
 
 const Home = () => {
   const name = localStorage.getItem('username');
@@ -87,27 +85,26 @@ const Home = () => {
           question_id: quizData[i].id,
           answer: answer[i]
         };
-        await axios.post(
-          ANSWER_API_URL,
-          apiData,
-          {
-            headers: {
-              'X-CSRFToken': csrftoken
-            },
-            withCredentials: true
+        await axios.post(ANSWER_API_URL, apiData, {
+          headers: {
+            'X-CSRFToken': csrftoken
           },
-          {
-            headers: {
-              'X-CSRFToken': csrftoken
-            },
-            withCredentials: true
-          }
-        );
+          withCredentials: true
+        });
       }
       setHasSubmitted(true);
-      const response = await axios.patch(`${USER_API_URL}/${name}/`, {
-        has_submitted: true
-      });
+      const response = await axios.patch(
+        `${USER_API_URL}/${name}/`,
+        {
+          has_submitted: true
+        },
+        {
+          headers: {
+            'X-CSRFToken': csrftoken
+          },
+          withCredentials: true
+        }
+      );
     } catch (error) {
       toast.error(`Error submitting answers: ${error}`);
     }
