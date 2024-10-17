@@ -1,10 +1,10 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.hashers import make_password
 from django.core.mail import send_mail
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import User, Token, Answer
+from .models import User, Token, Answer, Question
 from .serializers import UserSerializer, TokenSerializer, AnswerSerializer, ReportSerializer
 from django.conf import settings
 from rest_framework import viewsets, permissions
@@ -16,10 +16,12 @@ from django.utils import timezone
 from .permissions import CanViewReportPermission
 from django.utils.decorators import method_decorator
 from django.middleware.csrf import get_token
+from django.http import JsonResponse
+from django.views import View
+import json
 
 SALT = "8b4f6b2cc1868d75ef79e5cfb8779c11b6a374bf0fce05b485581bf4e1e25b"
 URL = "http://localhost:3000"
-
 
 def mail_template(content, button_url, button_text):
     return f"""<!DOCTYPE html>
@@ -188,11 +190,6 @@ class LoginView(APIView):
                 {"success": True, "message": "You are now logged in!", "username":user.username, "is_staff":user.is_staff},
                 status=status.HTTP_200_OK,
             )
-from django.shortcuts import render, get_object_or_404
-from django.http import JsonResponse
-from django.views import View
-from .models import Question
-import json
 
 class QuestionListView(View):
     def get(self, request):
@@ -323,8 +320,6 @@ class AnswerView(View):
                 "success": False,
                 "message": error_msg,
             }, status=400)
-
-from rest_framework.renderers import JSONRenderer
 
 class UserView(View):
     def get(self, request, username):
