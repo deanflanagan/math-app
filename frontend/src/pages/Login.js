@@ -14,7 +14,7 @@ const Login = () => {
   const isLoggedIn = name && email;
 
   useEffect(() => {
-    if (isLoggedIn) navigate('/profile');
+    if (isLoggedIn) navigate('/');
   }, [isLoggedIn, navigate]);
 
   const handleLogin = async (ev) => {
@@ -28,13 +28,14 @@ const Login = () => {
       toast.success(data.message);
       localStorage.setItem('username', data.username);
       localStorage.setItem('email', email);
-      navigate('/profile');
+      localStorage.setItem('is_staff', data.is_staff);
+      navigate('/');
     } else toast.error(data.message);
   };
 
   return (
     <div className="w-full flex justify-center my-4">
-      <div className="w-full max-w-lg p-6 bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
+      <div className="w-full max-w-lg p-6 bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700 mt-20">
         <h5 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white text-center">
           Login to your account
         </h5>

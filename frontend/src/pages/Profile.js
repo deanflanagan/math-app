@@ -15,7 +15,7 @@ const Profile = () => {
 
   return (
     <div className="flex items-center justify-center mt-5">
-      <div className="w-full max-w-lg p-6 bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
+      <div className="w-full max-w-lg p-6 bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700 mt-20">
         <div className="flex flex-col items-center pb-10">
           <img
             alt="User Icon"

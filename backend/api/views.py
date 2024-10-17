@@ -1,20 +1,27 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.hashers import make_password
 from django.core.mail import send_mail
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import User, Token, Answer
-from .serializers import UserSerializer, TokenSerializer, AnswerSerializer
+from .models import User, Token, Answer, Question
+from .serializers import UserSerializer, TokenSerializer, AnswerSerializer, ReportSerializer
 from django.conf import settings
+from rest_framework import viewsets, permissions
 from datetime import datetime, timedelta
 import hashlib
 import uuid
+from collections import defaultdict
 from django.utils import timezone
+from .permissions import CanViewReportPermission
+from django.utils.decorators import method_decorator
+from django.middleware.csrf import get_token
+from django.http import JsonResponse
+from django.views import View
+import json
 
 SALT = "8b4f6b2cc1868d75ef79e5cfb8779c11b6a374bf0fce05b485581bf4e1e25b"
 URL = "http://localhost:3000"
-
 
 def mail_template(content, button_url, button_text):
     return f"""<!DOCTYPE html>
@@ -35,6 +42,8 @@ def mail_template(content, button_url, button_text):
             </body>
             </html>"""
 
+def csrf_token_view(request):
+    return JsonResponse({'csrfToken': get_token(request)})
 
 # Create your views here.
 class ResetPasswordView(APIView):
@@ -178,23 +187,15 @@ class LoginView(APIView):
             )
         else:
             return Response(
-                {"success": True, "message": "You are now logged in!", "username":user.username},
+                {"success": True, "message": "You are now logged in!", "username":user.username, "is_staff":user.is_staff},
                 status=status.HTTP_200_OK,
             )
-from django.shortcuts import render, get_object_or_404
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
-from django.views import View
-from .models import Question
-import json
 
 class QuestionListView(View):
     def get(self, request):
         questions = Question.objects.all().values('id', 'text', 'correct_answer')
         return JsonResponse(list(questions), safe=False)
 
-    @method_decorator(csrf_exempt)
     def post(self, request):
         data = json.loads(request.body)
         question = Question.objects.create(
@@ -208,49 +209,127 @@ class QuestionDetailView(View):
         question = get_object_or_404(Question, pk=pk)
         return JsonResponse({'id': question.id, 'text': question.text, 'correct_answer': question.correct_answer})
 
+class ReportView(APIView):
+    #permission_classes = [permissions.IsAuthenticated, CanViewReportPermission]
+    def get(self, request):
+        answers = Answer.objects.all()
+        serializer = ReportSerializer(answers, many=True)
+        final = defaultdict(list)
+        for answer in serializer.data:
+            final[answer["country"]].append(1 if answer["is_correct"] else 0)
+        for key, value in final.items():
+            final[key] = sum(value) / len(value)
+        # serializer.data = final
+        return JsonResponse(final, safe=False)
+
 class AnswerView(View):
     def get(self, request):
-        username=request.data["username"]
+        username = request.GET.get("username")
         user=get_object_or_404(User, username=username)
         user_id=user.id
-        question_id=request.data["question_id"]
-        answer=get_object_or_404(Answer, user_id=user_id, question_id=question_id)
-        return Response(
-                answer,
-                status=status.HTTP_200_OK,
+        if request.GET.get("question_id"):
+            question_id=request.GET.get("question_id")
+            answer=get_object_or_404(Answer, user=user_id, question=question_id)
+            return JsonResponse({"answer":answer.answer})
+        else:
+            answers=Answer.objects.filter(user=user_id)
+            answers_list=[{"question_id":answer.question.id, "answer":answer.answer, "is_correct":answer.is_correct} for answer in answers]
+            return JsonResponse({"answers":answers_list})
+
+    def patch(self, request):
+        request_data=json.loads(request.body)
+        username = request_data.get("username")
+        user = get_object_or_404(User, username=username)
+
+        question_id = request_data.get("question_id")
+        user_answer = request_data.get("answer")
+        question = get_object_or_404(Question, pk=question_id)
+        is_correct = user_answer == question.correct_answer
+
+        answer_obj= Answer.objects.filter(user=user.id, question=question_id).first()
+        if answer_obj:
+            answer_obj.answer=user_answer
+            answer_obj.is_correct=is_correct
+            answer_obj.save()
+            return JsonResponse(
+                {"message": "Successfully updated answer!"},
+                status=201,
             )
 
-    @method_decorator(csrf_exempt)
-    def post(self, request):
-        username=request.data["username"]
-        user=get_object_or_404(User, username=username)
-        user_id=user.id
-        question_id=request.data["question_id"]
-        user_answer=request.data["answer"]
-        question=get_object_or_404(Question, pk=question_id)
-        is_correct=user_answer==question.correct_answer
-        data={
-            "user":user_id,
-            "question":question_id,
-            "answer":user_answer,
-            "is_correct":is_correct
+        data = {
+            "user": user.id,
+            "question": question_id,
+            "answer": user_answer,
+            "is_correct": is_correct
         }
         serializer = AnswerSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
-            created_answer=serializer.instance
-            return Response(
-                created_answer,
-                status=status.HTTP_200_OK,
+            return JsonResponse(
+                {"message": "Successfully updated answer!"},
+                status=201,
             )
         else:
-            error_msg = ""
-            for key in serializer.errors:
-                error_msg += serializer.errors[key][0]
-            return Response(
-                {
-                    "success": False,
-                    "message": error_msg,
-                },
-                status=status.HTTP_200_OK,
+            error_msg = "".join([serializer.errors[key][0] for key in serializer.errors])
+            return JsonResponse({
+                "success": False,
+                "message": error_msg,
+            }, status=400)
+
+    def post(self, request):
+        request_data=json.loads(request.body)
+        username = request_data.get("username")
+        user = get_object_or_404(User, username=username)
+
+        if user.has_submitted:
+            return JsonResponse({
+                "message": "You have already submitted your answers!"
+            }, status=403)
+
+        question_id = request_data.get("question_id")
+        user_answer = request_data.get("answer")
+        question = get_object_or_404(Question, pk=question_id)
+        is_correct = user_answer == question.correct_answer
+
+        answer_obj= Answer.objects.filter(user=user.id, question=question_id).first()
+        if answer_obj:
+            answer_obj.answer=user_answer
+            answer_obj.is_correct=is_correct
+            answer_obj.save()
+            return JsonResponse(
+                {"message": "Successfully updated answer!"},
+                status=201,
             )
+
+        data = {
+            "user": user.id,
+            "question": question_id,
+            "answer": user_answer,
+            "is_correct": is_correct
+        }
+        serializer = AnswerSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(
+                {"message": "Successfully updated answer!"},
+                status=201,
+            )
+        else:
+            error_msg = "".join([serializer.errors[key][0] for key in serializer.errors])
+            return JsonResponse({
+                "success": False,
+                "message": error_msg,
+            }, status=400)
+
+class UserView(View):
+    def get(self, request, username):
+        user = get_object_or_404(User, username=username)
+        serializer = UserSerializer(user)
+        return JsonResponse(serializer.data)
+    def patch(self, request, username):
+        user = get_object_or_404(User, username=username)
+        serializer = UserSerializer(user,data=json.loads(request.body),partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -12,6 +12,7 @@ class Token(models.Model):
 class User(AbstractUser):
     phone = models.CharField(max_length=10, null=True)
     country = models.CharField(max_length=63)
+    has_submitted = models.BooleanField(default=False)
     groups = models.ManyToManyField(
         'auth.Group',
         related_name='api_user_set',  # Add related_name to avoid clashes
@@ -29,6 +30,12 @@ class User(AbstractUser):
 
     def __str__(self) -> str:
         return self.username
+
+    class Meta:
+        permissions = [
+            ('can_view_report', 'Can view report'),
+        ]
+
 
 class Question(models.Model):
     id = models.AutoField(primary_key=True)
